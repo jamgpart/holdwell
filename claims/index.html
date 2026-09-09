@@ -170,6 +170,34 @@ textarea{width:100%;font:inherit;padding:10px;border-radius:10px;border:1px soli
 .toast.show{opacity:1}
 .foot{font-size:11px;color:var(--ink3);margin-top:24px;line-height:1.4}
 .label-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:8px;background:var(--info-soft);color:var(--info);font-size:12px;font-weight:600}
+/* ---- Checks, photos, sufficiency, ask, invoice ---- */
+.chk,.suff{width:100%;border-collapse:collapse;font-size:13px;margin-top:6px}
+.chk td,.suff td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.chk td.st,.suff td.st{width:84px;white-space:nowrap}
+.chk td.src,.suff td.src{width:170px;color:var(--ink3);font-size:12px;text-align:right}
+.chk .why{color:var(--ink2);margin-top:2px}
+.chk tr.fail td{background:var(--crit-soft)}
+.chk tr.flag td{background:var(--amber-soft)}
+.suff tr.miss td{background:var(--amber-soft)}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
+.pcard{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface2)}
+.pcard .ph.big{width:100%;height:150px;border-radius:0;border:0}
+.pcard.neg{border-color:var(--crit)}.pcard.warn{border-color:var(--amber)}
+.pbody{padding:10px 12px}
+.pacts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+.btn.small{padding:6px 10px;font-size:12px;border-radius:8px}
+.chat{display:flex;flex-direction:column;gap:8px;margin-top:12px;max-height:340px;overflow:auto;padding:4px 0}
+.cq{align-self:flex-end;background:var(--accent);color:var(--accent-ink);padding:8px 12px;border-radius:14px 14px 4px 14px;font-size:13px;max-width:70%}
+.ca{align-self:flex-start;background:var(--surface2);padding:10px 12px;border-radius:14px 14px 14px 4px;font-size:13px;max-width:85%;line-height:1.5}
+.qchips{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.qchip{padding:7px 11px;border-radius:999px;border:1px solid var(--line);background:var(--surface);font-size:12px;font-weight:600;color:var(--accent)}
+.qchip:hover{border-color:var(--accent)}
+.askbar{margin-top:10px}
+.askbar input{width:100%;font:inherit;font-size:13px;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface2);color:var(--ink)}
+.match{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
+.match th{text-align:left;font-size:11px;color:var(--ink3);text-transform:uppercase;letter-spacing:.06em;padding:6px 8px;border-bottom:1px solid var(--line)}
+.match td{padding:8px;border-bottom:1px solid var(--line)}
+.match td.st{text-align:right;width:70px}
 </style>
 
 <header class="top">
@@ -326,12 +354,60 @@ const CLAIMS=[
 ];
 const OLDER=[["CL-2026-00399","2020 Toyota RAV4","Water pump · auto-approved","$684","good","Auto-approved"],["CL-2026-00396","2016 BMW 328i","Oil cooler lines · adjusted","$912","good","Auto-approved"],["CL-2026-00391","2019 Subaru Outback","CVT · overridden by reviewer","$3,410","info","Label captured"],["CL-2026-00388","2021 Kia Telluride","Alternator · auto-approved","$742","good","Auto-approved"],["CL-2026-00385","2017 Jeep Grand Cherokee","Water pump and thermostat · adjusted to guide","$1,118","good","Auto-approved"],["CL-2026-00382","2019 Nissan Rogue","CVT · evidence received, approved","$3,860","good","Executed"],["CL-2026-00379","2016 Audi Q5","Timing chain tensioner · pre-existing, denial accepted","$0","crit","Denied"],["CL-2026-00377","2020 Hyundai Sonata","Starter motor · auto-approved","$518","good","Auto-approved"],["CL-2026-00374","2018 Chevrolet Silverado","Fuel injector set · adjusted to benchmark","$1,640","good","Auto-approved"],["CL-2026-00371","2019 Mazda CX-5","A/C compressor · auto-approved","$1,095","good","Auto-approved"],["CL-2026-00368","2017 Ford Escape","Turbocharger · overridden by reviewer","$2,210","info","Label captured"],["CL-2026-00365","2022 Tesla Model Y","Rear drive unit · reviewer accepted","$4,900","good","Executed"],["CL-2026-00362","2018 Honda Accord","Power steering rack · auto-approved","$1,380","good","Auto-approved"]];
 
+/* ---------- Checks, photo findings, sufficiency, assistant (PCMI-derived, made native) ---------- */
+const CHECK_DEFS=[
+ ["recall","Open recall for the claimed component","Vehicle"],
+ ["tsb","Technical service bulletin or manufacturer communication","Vehicle"],
+ ["factory","Factory warranty overlap","Vehicle"],
+ ["vin","VIN decode vs estimate","Vehicle"],
+ ["odo","Odometer triangulation: vehicle, RO, photo","Vehicle"],
+ ["wait","Waiting period, days and miles","Contract"],
+ ["benefit","Benefit remaining and aggregate limit","Contract"],
+ ["value","Vehicle value vs claims paid","Contract"],
+ ["prior","Prior repair on the same system","History"],
+ ["use","Excluded use: commercial, rideshare, fleet","History"],
+ ["mods","Modifications: lift, wheels, undercarriage, tune","Photos"],
+ ["damage","External damage or impact near the failure","Photos"],
+ ["commercial","Commercial-use indicators in photos","Photos"],
+ ["cause","Causation: evidence matches the diagnosis","Evidence"],
+ ["shop","Shop capability and scorecard","Shop"]
+];
+const CHECKS={
+ "CL-2026-00417":{recall:["pass","No open recalls for this VIN. TSB 19-071 is a CVT software advisory, not a warranty extension.","NHTSA"],tsb:["info","TSB 19-071 concerns shift quality after a software update; it does not cover valve body hardware failure.","OEM bulletins"],factory:["pass","Powertrain warranty expired at 60,000 mi. HoldWell is the responsible payer under §3.5.","OEM warranty table"],vin:["pass","VIN decodes to 1.5T CVT AWD; the valve body part number matches this transmission family.","VIN decode"],odo:["pass","Vehicle 68,431 · RO 68,412 · photo 68,412. Spread 19 mi, inside the 50 mi tolerance.","Smartcar + RO + vision"],wait:["pass","218 days and 6,512 mi since bind against a 30-day / 1,000-mi window.","Contract record"],benefit:["pass","$0 paid to date. This payout leaves $12,683 of the $15,000 aggregate.","Contract ledger"],value:["pass","Vehicle value $17,900 (three-source median). Claims after this one are 13% of value.","Valuation"],prior:["pass","No transmission work in Carfax or shop history. Enrollment RO history clean.","Carfax + Tekmetric"],use:["pass","Personal registration. No rideshare or fleet pattern in mileage or photos.","Carfax + vision"],mods:["pass","Stock ride height, OEM wheels, nothing aftermarket visible.","Vision, 4 photos"],damage:["pass","No impact damage near the transmission case or pan.","Vision"],commercial:["pass","No racks, signage, or fleet equipment.","Vision"],cause:["pass","Scored separator plate plus P0868/P0871 is the documented failure mode. Onset dated to Aug 14 by telemetry.","Vision + telemetry"],shop:["pass","Preferred tier. Transmission work is within the shop's service profile. Loss ratio 41%.","Shop scorecard"]},
+ "CL-2026-00421":{recall:["info","Recall 23S12 is open (rear hub bolt) and unrelated to the turbo.","NHTSA"],tsb:["flag","TSB 19-2346 covers P0299 underboost diagnosis on the 3.5L EcoBoost. Diagnostic guidance only, no warranty extension.","OEM bulletins"],factory:["pass","Powertrain warranty expired at 60,000 mi.","OEM warranty table"],vin:["pass","VIN decodes to 3.5L EcoBoost twin-turbo; right-bank part number is valid for this engine.","VIN decode"],odo:["pass","Vehicle 91,220 · RO 91,204 · photo 91,204. Within tolerance.","FordPass + RO + vision"],wait:["pass","41 days and 1,064 mi since bind. The 30-day / 1,000-mi window cleared by 11 days and 64 mi.","Contract record"],benefit:["pass","$0 paid to date.","Contract ledger"],value:["pass","Vehicle value $21,400. Claim is 14% of value.","Valuation"],prior:["fail","P0299 was recorded on the Condition of Record at bind and has appeared in every monthly snapshot since.","Condition of Record"],use:["pass","Personal registration. No fleet indicators.","Carfax"],mods:["pass","Stock height and wheels. No intake, tune, or aftermarket boost parts in the engine bay photo.","Vision"],damage:["pass","No front-end impact evidence.","Vision"],commercial:["pass","Standard receiver hitch only, which is not a commercial indicator.","Vision"],cause:["pass","Shaft play matches P0299. The failure itself is not disputed; the timing is.","Vision"],shop:["flag","Preferred tier, but this is the shop's first early claim this quarter, and its enrollment inspection noted P0299 as advised, not repaired.","Shop scorecard"]},
+ "CL-2026-00408":{recall:["pass","No open recalls on the HV battery for this VIN.","NHTSA"],tsb:["info","SB-24-16-003 covers module imbalance diagnosis. A service bulletin, not a warranty extension.","Tesla bulletins"],factory:["pass","Battery warranty 8 yr / 120,000 mi expired at 120,000. Now 121,450.","OEM warranty table"],vin:["pass","VIN decodes to 2018 LR RWD 75 kWh. Module 4 part number matches this pack revision.","VIN decode"],odo:["pass","Vehicle 121,450 · RO 121,450. The Fleet API read is authoritative; no photo needed.","Tesla Fleet API"],wait:["pass","120 days and 9,050 mi since bind.","Contract record"],benefit:["flag","$6,550 is 44% of the $15,000 aggregate. Within limit, surfaced for the reviewer.","Contract ledger"],value:["pass","Vehicle value $18,200. Module repair keeps claims at 36% of value; a pack replacement would exceed 70%.","Valuation"],prior:["pass","No prior battery service. Two prior claims on this contract, both suspension.","Carfax + contract"],use:["pass","Personal. Monthly reads show no rideshare mileage pattern.","Fleet API"],mods:["pass","Stock aero wheels, no aftermarket suspension.","Vision"],damage:["pass","No undercarriage impact on the pack skid plate.","Vision"],commercial:["pass","None.","Vision"],cause:["pass","Four-read SOH decline is gradual. BMS_a035 names module 4. Report and photo agree.","Fleet API + vision"],shop:["pass","Standard tier EV specialist. Two prior claims, both agreed with the adjudicator.","Shop scorecard"]},
+ "CL-2026-00425":{recall:["pass","No open recalls.","NHTSA"],tsb:["info","No bulletin for the compressor clutch on this platform.","OEM bulletins"],factory:["pass","Warranty expired.","OEM warranty table"],vin:["pass","VIN decodes to 1.5T FWD. Compressor part number valid.","VIN decode"],odo:["flag","RO says 94,330. Photo unreadable. No vehicle connection to cross-check.","Vision"],wait:["pass","171 days since bind.","Contract record"],benefit:["pass","$0 paid to date.","Contract ledger"],value:["pass","Vehicle value $9,800. Claim is 11% of value.","Valuation"],prior:["pass","No prior A/C work in Carfax.","Carfax"],use:["pass","Personal registration.","Carfax"],mods:["info","Only an engine-bay photo received. Exterior checks not possible yet.","Vision"],damage:["info","Cannot assess without exterior photos.","Vision"],commercial:["info","Cannot assess.","Vision"],cause:["flag","Clutch bearing failure is plausible at this mileage, but there is no failed-part photo yet.","Benchmarks"],shop:["flag","New shop, first claim, no scorecard history.","Shop scorecard"]}
+};
+const FINDINGS={
+ "CL-2026-00417":[{f:"Scoring on the separator-plate face and wear in the solenoid bores, consistent with pressure fault P0868.",conf:91,k:"pos"},{f:"Score lines cross two pressure channels. No evidence of prior resealing.",conf:88,k:"pos"},{f:"Reads 68,412. Digits legible. Matches RO and vehicle within 19 mi.",conf:97,k:"pos"},{f:"Matches the contract VIN. No tampering indicators on the plate or rivets.",conf:99,k:"pos"}],
+ "CL-2026-00421":[{f:"Visible axial play at the turbine shaft with oil residue on the housing.",conf:90,k:"pos"},{f:"Compressor wheel blade tips show housing contact, consistent with bearing wear.",conf:87,k:"pos"},{f:"Reads 91,204. Matches the RO.",conf:96,k:"pos"},{f:"Stock airbox and intake. No tune or aftermarket boost components.",conf:84,k:"pos"}],
+ "CL-2026-00408":[{f:"Diagnostic screen shows module 4 at 3.51 V against a 3.72 V pack median. Imbalance confirmed.",conf:92,k:"pos"},{f:"Module removed. No swelling or thermal marks; failure is electrical, not damage.",conf:85,k:"pos"},{f:"Reads 121,450. Matches the Fleet API.",conf:98,k:"pos"},{f:"BMS_a035 logged 14 times in 30 days. Report dated within 2 days of the RO.",conf:95,k:"pos"}],
+ "CL-2026-00425":[{f:"Motion blur. Digits not recoverable; cannot verify 94,330.",conf:62,k:"warn"},{f:"Not received. §7.2 requires a photo of the failed component before authorization.",conf:0,k:"neg"},{f:"Compressor visible in place. Clutch face is not in frame.",conf:70,k:"warn"}]
+};
+const SUFF={
+ "CL-2026-00417":{score:100,items:[["Repair order with complaint, cause, correction",true,"Tekmetric webhook · 9:41 am"],["Scan-tool codes",true,"Shop read · P0868, P0871 · 9:41 am"],["Photos of the failed component (2)",true,"QR capture · 9:44 am"],["Odometer photo",true,"QR capture · 9:44 am"],["VIN plate photo",true,"QR capture · 9:45 am"],["Vehicle data pull",true,"Smartcar · 9:41 am"],["Enrollment baseline",true,"Sealed Feb 3, 2026"],["Labor guide and parts benchmark",true,"Pulled 9:41 am"]]},
+ "CL-2026-00421":{score:100,items:[["Repair order with complaint, cause, correction",true,"Tekmetric webhook · 10:12 am"],["Scan-tool codes",true,"Shop read · P0299, P0868, P0871"],["Photos of the failed component (2)",true,"QR capture · 10:15 am"],["Odometer photo",true,"QR capture · 10:15 am"],["Engine bay photo",true,"QR capture · 10:16 am"],["Vehicle data pull",true,"FordPass · 10:12 am"],["Enrollment baseline",true,"Sealed Jul 30, 2026 · P0299 recorded"],["Labor guide and parts benchmark",true,"Pulled 10:12 am"]]},
+ "CL-2026-00408":{score:100,items:[["Repair order",true,"Tekmetric webhook · 8:55 am"],["Battery diagnostic report",true,"Uploaded 8:57 am"],["State of health readings",true,"Tesla Fleet API · 4 monthly reads"],["Module photo",true,"QR capture · 9:02 am"],["Odometer",true,"Fleet API (photo not required)"],["Enrollment baseline",true,"Sealed May 12, 2026 · SOH 87%"],["Remedy benchmarks",true,"Module vs pack pricing pulled"]]},
+ "CL-2026-00425":{score:55,items:[["Repair order",true,"Shop-Ware · 10:30 am"],["Legible odometer photo",false,"Received, unreadable (motion blur)"],["Photo of the failed compressor clutch",false,"Not received"],["Exterior photos (optional)",false,"Not received"],["Vehicle data pull (optional)",false,"No connection on this contract"],["Enrollment baseline",true,"Inspection only · A/C operating at bind"],["Labor guide and parts benchmark",true,"Pulled 10:30 am"]]}
+};
+const FLIP={
+ "CL-2026-00417":"A prior transmission repair inside 12 months would route this to the parts-warranty path first. An odometer conflict over 50 mi, or media reused from another claim, would remove auto-execute. Nothing in the file points that way.",
+ "CL-2026-00421":"Proof that the P0299 condition was repaired and the code cleared before this failure. Upload the repair record and the engine re-runs on arrival. §3.2(b) stops applying once the recorded condition is verified as repaired.",
+ "CL-2026-00408":"If the module repair failed to restore state of health above 82%, §4.4 would no longer permit the module-level remedy and a $13,400 pack replacement would be evaluated instead.",
+ "CL-2026-00425":"Two items: a legible odometer photo or the scan-tool read, and a photo of the failed compressor clutch. On arrival the provisional $1,050 becomes final with no further review."
+};
+const INSPECT_BRIEF={
+ "CL-2026-00417":["Verify VIN plate and door-jamb label match 2HKRW2H58KH612345","Photograph odometer with ignition on","Photograph the removed valve body: separator plate face, solenoid bores","Confirm scan-tool codes P0868 and P0871 are present in freeze-frame data","Check transmission pan for metal debris; photograph magnet","Note any evidence of prior resealing or non-OEM fluid"],
+ "CL-2026-00421":["Verify VIN and odometer","Photograph turbine shaft play with dial indicator reading","Photograph compressor wheel and housing contact marks","Pull freeze-frame for P0299: date and mileage of first set","Inspect for prior turbo work: sealant, replaced clamps, non-OEM lines","Document intake and charge-air system for modifications"],
+ "CL-2026-00408":["Verify VIN and odometer from the vehicle screen","Photograph pack diagnostic screen with module voltages","Photograph removed module 4 for swelling or thermal marks","Confirm BMS_a035 in the service log with first occurrence date","Inspect skid plate and pack underside for impact"],
+ "CL-2026-00425":["Verify VIN and photograph odometer legibly","Photograph the compressor clutch and pulley, in the vehicle or on the bench","Photograph all four corners","Confirm refrigerant pressure readings before repair","Note any front-end impact or prior A/C work"]
+};
 /* ---------- State ---------- */
 const state={cur:null,phase:"intake",tab:"lines",labels:1208,stp:61};
 const $=s=>document.querySelector(s);
 const fmt=n=>"$"+Math.round(n).toLocaleString();
 const byId=id=>CLAIMS.find(c=>c.id===id);
-const STATUS={new:["New","new"],running:["Deciding…","amber"],approved:["Auto-approved","good"],review:["Needs accept","info"],denial:["Prepared denial","crit"],evidence:["Evidence requested","amber"],accepted:["Executed","good"],overridden:["Overridden","info"]};
+const STATUS={new:["New","new"],running:["Deciding…","amber"],approved:["Auto-approved","good"],review:["Needs accept","info"],denial:["Prepared denial","crit"],evidence:["Evidence requested","amber"],accepted:["Executed","good"],paid:["Paid","good"],overridden:["Overridden","info"]};
 
 function renderQueue(){
   $("#queue").innerHTML=CLAIMS.map(c=>{const st=STATUS[c.status];return `<button class="q ${state.cur===c.id?"on":""}" data-id="${c.id}"><span class="id mono">${c.id} · ${c.submitted}</span><span class="amt">${fmt(c.lines.reduce((a,l)=>a+l.amt,0))}</span><span class="veh">${c.vehicle}</span><span class="sub desc">${c.component} · ${c.shop}</span><span class="sub chipline"><span class="chip ${st[1]}"><i class="d"></i>${st[0]}</span></span></button>`}).join("")
@@ -381,7 +457,7 @@ function renderDecision(c){
   const v=`<section class="verdict ${d.verdict}"><div><div style="font-size:12px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--ink2)">${d.tier}</div><h2>${d.title}</h2><div class="sub">${d.verdict==="approved"?`Authorization sent to ${c.shop}. Payout ${fmt(d.payout)} after the ${fmt(d.deductible)} deductible, payable on invoice match.`:d.verdict==="review"?`Engine recommends approval. Amount above the auto-execute threshold, so a reviewer accepts with one click. Reasoning attached.`:d.verdict==="denial"?`Engine has prepared a denial with the clause and the baseline diff. HoldWell never auto-denies: a reviewer must accept, adjust, or override with a reason.`:`Covered in principle. The engine asked ${c.shop} for exactly the two items §7.2 requires. Provisional payout ${fmt(d.payout)} once they arrive.`}</div></div>
     <div class="big"><b>${d.verdict==="denial"?"$0":fmt(d.payout)}</b><span>${d.verdict==="evidence"?"provisional":"payout"} · confidence ${d.conf}%</span></div>
     <div class="router"><span style="color:var(--ink3);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em">Routing</span>${d.router.map(r=>`<span class="r ${r[1]==="ok"?"":r[1]==="warn"?"warn":"bad"}"><i></i>${r[0]}</span>`).join("")}</div></section>`;
-  const tabs=`<div class="tabs">${[["lines","Lines"],["cites","Citations"],["evidence","Evidence"],["integrity","Integrity"],["outputs","Outputs"]].map(t=>`<button data-tab="${t[0]}" class="${state.tab===t[0]?"on":""}">${t[1]}</button>`).join("")}</div>`;
+  const tabs=`<div class="tabs">${[["lines","Lines"],["cites","Citations"],["checks","Checks"],["photos","Photos"],["suff","Evidence needed"],["evidence","Evidence"],["integrity","Integrity"],["outputs","Outputs"],["ask","Ask this claim"]].map(t=>`<button data-tab="${t[0]}" class="${state.tab===t[0]?"on":""}">${t[1]}</button>`).join("")}</div>`;
   const lines=`<div class="panel ${state.tab==="lines"?"on":""}" data-panel="lines"><div class="card"><table class="lines"><tr><th>Line</th><th>Determination</th><th class="r">Submitted</th><th class="r">Allowed</th></tr>
     ${c.lines.map((l,k)=>{const det=d.dets[k];const m=/\(\$([\d,]+)\)/.exec(det.c);const allowed=d.verdict==="denial"?0:(m?+m[1].replace(",",""):l.amt);return `<tr><td>${l.d}<div class="det">${l.type==="labor"?`Guide ${l.guide} h · cap ${(l.guide*1.1).toFixed(2)} h`:`Benchmark ${fmt(l.bench)} · ±15%`}</div></td><td><span class="chip ${/Excluded/.test(det.c)?"crit":/Adjusted/.test(det.c)?"amber":/pending/.test(det.c)?"amber":"good"}">${det.c}</span><div class="det">${det.note} · ${cite(c.form,det.cite)}</div></td><td class="r">${fmt(l.amt)}</td><td class="r">${fmt(allowed)}</td></tr>`}).join("")}
     <tr><td colspan="3"><b>Allowed total</b></td><td class="r"><b>${fmt(d.verdict==="denial"?0:adjTotal)}</b></td></tr><tr><td colspan="3">Deductible ${cite(c.form,"5.1")}</td><td class="r">−${fmt(d.verdict==="denial"?0:d.deductible)}</td></tr><tr><td colspan="3"><b>${d.verdict==="evidence"?"Provisional payout":"Payout"}</b></td><td class="r"><b>${fmt(d.verdict==="denial"?0:d.payout)}</b></td></tr></table></div></div>`;
@@ -398,13 +474,14 @@ function renderDecision(c){
     <p style="font-size:12px;color:var(--ink2);margin-top:10px">Integrity signals feed the authority tiers. Any conflict removes auto-execute. Shop scorecards update from claim one and adjust commission vesting per the IRF fraud framework.</p></div></div>`;
   const out=`<div class="panel ${state.tab==="outputs"?"on":""}" data-panel="outputs"><div class="grid" style="margin-top:0"><div class="card"><h3>To the shop</h3><div class="letter">${shopLetter(c)}</div></div><div class="card"><h3>To the customer</h3><div class="letter">${custLetter(c)}</div></div><div class="card span"><p style="font-size:13px;color:var(--ink2)">Both messages are rendered from the same decision object. There is no second model pass that could say something different to the shop than to the customer.</p></div></div></div>`;
   const acts=renderActs(c);
-  return v+tabs+lines+cites+ev+integ+out+acts;
+  return v+tabs+lines+cites+renderChecks(c)+renderPhotos(c)+renderSuff(c)+ev+integ+out+renderAsk(c)+acts;
 }
 function renderActs(c){
   const d=c.decision;
-  if(c.status==="accepted")return `<div class="acts"><span class="chip good"><i class="d"></i>Accepted by reviewer · executed</span><span class="label-chip">Training label captured · agreement</span></div>`;
+  if(c.status==="paid")return `<div class="acts"><span class="chip good"><i class="d"></i>Paid by virtual card · ${fmt(d.payout)}</span><span class="label-chip">Training label captured · agreement</span></div>`;
+  if(c.status==="accepted")return `<div class="acts"><span class="chip good"><i class="d"></i>Accepted by reviewer · executed</span>${d.verdict!=="denial"?`<button class="btn" data-invoice>Simulate: invoice arrives</button>`:""}<span class="label-chip">Training label captured · agreement</span></div>`;
   if(c.status==="overridden")return `<div class="acts"><span class="chip info"><i class="d"></i>Overridden · ${c.overrideReason}</span><span class="label-chip">Training label captured · override</span></div>`;
-  if(d.verdict==="approved")return `<div class="acts"><span class="chip good"><i class="d"></i>Executed automatically</span><button class="btn secondary" data-override>Override with reason</button><span class="note">Auto-executed decisions stay reviewable for 30 days.</span></div>`;
+  if(d.verdict==="approved")return `<div class="acts"><span class="chip good"><i class="d"></i>Executed automatically</span><button class="btn" data-invoice>Simulate: invoice arrives</button><button class="btn secondary" data-override>Override with reason</button><span class="note">Auto-executed decisions stay reviewable for 30 days.</span></div>`;
   if(d.verdict==="evidence")return `<div class="acts"><button class="btn" data-remind>Resend request to shop</button><button class="btn secondary" data-simulate>Simulate: photos arrive</button><span class="note">Asked for: ${d.requests.join(" · ")}</span></div>`;
   return `<div class="acts"><button class="btn" data-accept>Accept ${d.verdict==="denial"?"denial":"and execute"}</button><button class="btn secondary" data-override>Override with reason</button>${d.verdict==="denial"?`<button class="btn secondary" data-adjust>Request more evidence instead</button>`:""}<span class="note">A human decides here. The reason code becomes a training label.</span></div>`;
 }
@@ -418,9 +495,78 @@ function custLetter(c){const d=c.decision;const first="Jordan";
   if(d.verdict==="evidence")return `Hi ${first},\n\nGood news: your A/C compressor is covered. We've asked ${c.shop} for two quick photos so we can pay them directly. Once they arrive, HoldWell pays ${fmt(d.payout)} and you owe only the ${fmt(d.deductible)} deductible.\n\nNo inspection, no waiting for a call back.`;
   return `Hi ${first},\n\nYour ${c.component.toLowerCase()} repair at ${c.shop} is <b>approved</b>. HoldWell is paying ${fmt(d.payout)} directly to the shop. You owe the ${fmt(d.deductible)} deductible and nothing else.\n\n${c.id==="CL-2026-00417"?"Your car's own diagnostic data confirmed the fault, so no inspection was needed.":c.id==="CL-2026-00408"?"Your battery data showed a gradual decline in module 4, so we approved a module repair that restores your range without replacing the whole pack.":""}\n\nEvery line of this decision and the contract section behind it is in your HoldWell account.`;
 }
+/* ---------- New panels ---------- */
+function renderChecks(c){
+  const ck=CHECKS[c.id]||{};const groups={};
+  CHECK_DEFS.forEach(d=>{const r=ck[d[0]];if(!r)return;(groups[d[2]]=groups[d[2]]||[]).push({name:d[1],res:r[0],why:r[1],src:r[2]})});
+  const all=Object.values(groups).flat();const n={pass:0,flag:0,fail:0,info:0};all.forEach(x=>n[x.res]++);
+  const lab={pass:"Clear",flag:"Watch",fail:"Conflict",info:"Info"},cls={pass:"good",flag:"amber",fail:"crit",info:""};
+  return `<div class="panel ${state.tab==="checks"?"on":""}" data-panel="checks">
+    <div class="card"><div class="row" style="flex-wrap:wrap;gap:10px"><div><h3>${all.length} checks, one decision</h3><p style="font-size:13px;color:var(--ink2);margin-top:2px">Every check the incumbent scores separately is run here too. The difference: they roll into one calibrated confidence and one authority tier, not a risk score beside a percentage beside a priority badge.</p></div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap"><span class="chip good"><i class="d"></i>${n.pass} clear</span>${n.flag?`<span class="chip amber"><i class="d"></i>${n.flag} watch</span>`:""}${n.fail?`<span class="chip crit"><i class="d"></i>${n.fail} conflict</span>`:""}${n.info?`<span class="chip"><i class="d"></i>${n.info} info</span>`:""}<span class="chip info"><i class="d"></i>Confidence ${c.decision.conf}%</span></div></div>
+    ${Object.entries(groups).map(([g,items])=>`<h4 style="margin-top:14px">${g}</h4><table class="chk">${items.map(x=>`<tr class="${x.res}"><td class="st"><span class="chip ${cls[x.res]}">${lab[x.res]}</span></td><td><b>${x.name}</b><div class="why">${x.why}</div></td><td class="src">${x.src}</td></tr>`).join("")}</table>`).join("")}</div></div>`;
+}
+function renderPhotos(c){
+  const fs=FINDINGS[c.id]||[];c.labels=c.labels||{};
+  return `<div class="panel ${state.tab==="photos"?"on":""}" data-panel="photos"><div class="card"><h3>Vision findings, one per item</h3><p style="font-size:13px;color:var(--ink2)">Each finding carries its own confidence. Confirm or reject it and the answer becomes a training label the next claim learns from. The incumbent has the same buttons; nothing behind them learns.</p>
+    <div class="pgrid">${c.photos.map((p,i)=>{const f=fs[i]||{f:"No analysis",conf:0,k:"warn"};const l=c.labels[i];return `<div class="pcard ${f.k}">${ph(p[0],p[1],(p[2]||"")+" big")}<div class="pbody"><div class="row"><b style="font-size:13px">${p[0]}</b><span class="chip ${f.k==="pos"?"good":f.k==="warn"?"amber":"crit"}">${f.conf?f.conf+"%":"missing"}</span></div><p style="font-size:13px;margin-top:4px">${f.f}</p>
+      <div class="pacts">${l?`<span class="label-chip">${l==="confirmed"?"Confirmed":l==="rejected"?"Rejected":"Corrected"} · label captured</span>`:`<button class="btn small" data-lbl="confirmed" data-i="${i}">Confirm</button><button class="btn small secondary" data-lbl="rejected" data-i="${i}">Reject</button><button class="btn small secondary" data-lbl="corrected" data-i="${i}">Correct</button>`}</div></div></div>`}).join("")}</div></div></div>`;
+}
+function renderSuff(c){
+  const s=SUFF[c.id]||{score:0,items:[]};const missing=s.items.filter(x=>!x[1]&&!/optional/i.test(x[0]));
+  return `<div class="panel ${state.tab==="suff"?"on":""}" data-panel="suff"><div class="card">
+    <div class="row" style="flex-wrap:wrap;gap:10px"><div><h3>Evidence needed for this failure</h3><p style="font-size:13px;color:var(--ink2);margin-top:2px">Generated from the coverage graph and the claimed component, not a fixed eight-document list. When something is missing the engine asks for exactly that item.</p></div><div class="score ${s.score<70?"warn":""}" style="min-width:220px"><b style="font-size:12px">Sufficiency</b><div class="bar"><i style="width:${s.score}%"></i></div><span class="mono">${s.score}%</span></div></div>
+    <table class="suff">${s.items.map(x=>`<tr class="${x[1]?"met":"miss"}"><td class="st"><span class="chip ${x[1]?"good":/optional/i.test(x[0])?"":"amber"}">${x[1]?"Met":/optional/i.test(x[0])?"Optional":"Missing"}</span></td><td><b>${x[0]}</b></td><td class="src">${x[2]}</td></tr>`).join("")}</table>
+    ${missing.length?`<div class="finding warn" style="margin-top:12px"><b>Requested from ${c.shop} by SMS with a QR upload link</b>${missing.map(m=>`• ${m[0]}`).join("<br>")}<div class="src">Re-adjudicates automatically on arrival. No inspection dispatched.</div></div>`:`<div class="finding pos" style="margin-top:12px"><b>Sufficient. No inspection needed.</b>A $150 field inspection and about 3 days of cycle time avoided. Field inspection remains available as the rare escalation below.</div>`}
+    <div class="acts"><button class="btn secondary" data-inspect>Escalate to field inspection</button><span class="note">Used on under 5% of claims. Generates a tailored brief for the inspector.</span></div></div></div>`;
+}
+function renderAsk(c){
+  c.chat=c.chat||[];
+  const qs=[["why","Why was this approved or denied?"],["flip","What would change the decision?"],["shop","Is the shop trustworthy?"],["note","Draft a note to the customer"]];
+  return `<div class="panel ${state.tab==="ask"?"on":""}" data-panel="ask"><div class="card"><h3>Ask this claim</h3><p style="font-size:13px;color:var(--ink2)">Answers are rendered from the decision object, so the assistant cannot say something the verdict does not. Safe enough to give to adjusters, not just supervisors.</p>
+    <div class="chat">${c.chat.length?c.chat.map(m=>`<div class="cq">${m.q}</div><div class="ca">${m.a}</div>`).join(""):`<div class="ca" style="opacity:.7">Choose a question to start.</div>`}</div>
+    <div class="qchips">${qs.map(q=>`<button class="qchip" data-q="${q[0]}">${q[1]}</button>`).join("")}</div>
+    <div class="askbar"><input type="text" placeholder="Scripted for the demo: pick a question above" disabled></div></div></div>`;
+}
+function answer(c,key){const d=c.decision,it=d.integrity;
+  if(key==="why")return `<b>${d.title}.</b> ${c.lines.map((l,k)=>`${l.d}: ${d.dets[k].c} (§${d.dets[k].cite})`).join("; ")}. ${d.verdict==="denial"?"The claimed code was recorded at enrollment on the sealed Condition of Record, so §3.2(b) applies until the condition is verified repaired.":d.verdict==="evidence"?"Coverage is established in principle; the decision is provisional until the two §7.2 items arrive.":`Confidence ${d.conf}%, ${d.tier.toLowerCase()}.`}`;
+  if(key==="flip")return FLIP[c.id];
+  if(key==="shop"){const s=it.items.find(x=>x[0]==="Shop scorecard");return `<b>${c.shop}, ${c.shopTier} tier.</b> ${s?s[1]:""}. Integrity risk on this claim is ${it.score} of ${it.max}. ${it.score>50?"Enhanced review applies to every claim from this shop until the early-claim signal clears.":it.score>20?"No action on the shop; the watch items are about this claim's evidence, not the shop's history.":"No shop-level concerns. Commission on the originating contract vests on schedule."}`}
+  if(key==="note")return custLetter(c).replace(/\n/g,"<br>");
+  return "";
+}
+function invoiceFor(c){const d=c.decision;const gross=d.payout+d.deductible;
+  return [["Repair order number",c.ro,c.ro,"exact",true],["VIN",c.vin,c.vin,"exact",true],["Repair facility",c.shop,c.shop,"exact",true],["Customer name","Jordan Lee","Jordan M. Lee","92% ≥ 80%",true],["Invoice date","within 30 days of RO","+2 days","exact",true],["Parts and labor lines",fmt(gross),fmt(gross),"per line ±$0",true],["Deductible collected",fmt(d.deductible),fmt(d.deductible),"exact",true],["Net due to shop",fmt(d.payout),fmt(d.payout),"±1%",true]];
+}
+function openInvoice(c){
+  const rows=invoiceFor(c);
+  openModal(`<h2>Invoice received from ${c.shop}</h2><p style="font-size:13px;color:var(--ink2);margin-top:4px">The invoice is read by document intelligence and matched field by field against the authorization. Tolerances are learned from outcomes, not hand-set per client. In tolerance means paid, with no human touch.</p>
+    <table class="match" id="match"><tr><th>Field</th><th>Authorized</th><th>Invoice</th><th>Tolerance</th><th></th></tr>${rows.map((r,i)=>`<tr data-row="${i}"><td>${r[0]}</td><td class="mono">${r[1]}</td><td class="mono">${r[2]}</td><td>${r[3]}</td><td class="st"><span class="chip">…</span></td></tr>`).join("")}</table>
+    <div class="acts" id="inv-acts"><span class="chip amber"><i class="d"></i>Matching…</span></div>`);
+  const trs=[...document.querySelectorAll("#match [data-row]")];let i=0;
+  const tick=()=>{if(i<trs.length){trs[i].querySelector(".st").innerHTML=`<span class="chip good">Match</span>`;i++;setTimeout(tick,160)}else{
+    $("#inv-acts").innerHTML=`<span class="chip good"><i class="d"></i>All fields in tolerance</span><span class="label-chip">Paid ${fmt(c.decision.payout)} by virtual card ····7731 · 1.2 s</span><button class="btn secondary" id="inv-close" style="margin-left:auto">Close</button>`;
+    c.status="paid";renderQueue();renderMain();$("#inv-close").onclick=closeModal;toast(`Paid ${fmt(c.decision.payout)} to ${c.shop} on invoice match`)}};
+  setTimeout(tick,400);
+}
+function openInspect(c){
+  const items=INSPECT_BRIEF[c.id]||[];
+  openModal(`<h2>Field inspection brief</h2><p style="font-size:13px;color:var(--ink2);margin-top:4px">Generated from this claim's open questions. HoldWell dispatches inspections on under 5% of claims; the engine prefers a targeted photo or video request, which resolves most uncertainty in hours instead of days.</p>
+    <div class="letter" style="margin-top:12px"><b>Inspection request · ${c.id} · ${c.vehicle}</b>\nVIN ${c.vin} · ${c.shop} · claimed failure: ${c.component}\n\nPlease document, with photos, each item below:\n${items.map((x,i)=>`${i+1}. ${x}`).join("\n")}\n\nUpload through the QR link. The claim re-adjudicates automatically when your report arrives.</div>
+    <div class="acts"><button class="btn" id="insp-send">Dispatch inspection · $150</button><button class="btn secondary" id="insp-cancel">Cancel, keep the photo request</button></div>`);
+  $("#insp-send").onclick=()=>{closeModal();toast("Inspection dispatched · report expected in 2 to 3 days");};
+  $("#insp-cancel").onclick=closeModal;
+}
+function wireExtras(c){
+  document.querySelectorAll("[data-lbl]").forEach(b=>b.onclick=()=>{c.labels[b.dataset.i]=b.dataset.lbl;state.labels++;$("#st-labels").textContent=state.labels.toLocaleString();renderMain();toast("Training label captured · "+b.dataset.lbl)});
+  document.querySelectorAll("[data-q]").forEach(b=>b.onclick=()=>{const q=b.textContent;c.chat.push({q,a:answer(c,b.dataset.q)});renderMain();const el=document.querySelector(".chat");if(el)el.scrollTop=el.scrollHeight});
+  const inv=document.querySelector("[data-invoice]");if(inv)inv.onclick=()=>openInvoice(c);
+  const ins=document.querySelector("[data-inspect]");if(ins)ins.onclick=()=>openInspect(c);
+}
 function wireDecision(c){
   document.querySelectorAll("[data-tab]").forEach(b=>b.onclick=()=>{state.tab=b.dataset.tab;document.querySelectorAll("[data-tab]").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll("[data-panel]").forEach(p=>p.classList.toggle("on",p.dataset.panel===state.tab))});
   document.querySelectorAll(".cite").forEach(s=>s.onclick=()=>{state.tab="cites";document.querySelector('[data-tab="cites"]').click();const el=document.getElementById("cite-"+s.dataset.cite.replace(/[()]/g,""));if(el){el.scrollIntoView({behavior:"smooth",block:"center"});el.style.boxShadow="0 0 0 3px var(--amber)";setTimeout(()=>el.style.boxShadow="",1400)}});
+  wireExtras(c);
   const q=s=>document.querySelector(s);
   q("[data-accept]")&&(q("[data-accept]").onclick=()=>{c.status="accepted";state.labels++;$("#st-labels").textContent=state.labels.toLocaleString();renderQueue();renderMain();toast(c.decision.verdict==="denial"?"Denial letter sent · reviewer: J. Ghata":"Executed · authorization and payment released")});
   q("[data-override]")&&(q("[data-override]").onclick=()=>openOverride(c));
