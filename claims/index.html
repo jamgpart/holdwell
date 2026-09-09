@@ -44,13 +44,14 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--amber);out
 .layout{display:grid;grid-template-columns:300px 1fr;min-height:calc(100dvh - 55px)}
 @media(max-width:900px){.layout{grid-template-columns:1fr}.queue{border-right:0;border-bottom:1px solid var(--line);max-height:220px;overflow:auto}}
 .queue{border-right:1px solid var(--line);background:var(--ground);padding:12px 12px;display:flex;flex-direction:column;gap:8px}
-.queue h4{padding:4px 4px 0}
-.q{display:grid;grid-template-columns:1fr auto;gap:3px 8px;padding:12px 13px;border-radius:14px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);box-shadow:0 1px 0 rgba(18,26,23,.04),0 4px 14px rgba(18,26,23,.06)}
+.queue h4{padding:4px 4px 0;margin:0}
+#queue{display:flex;flex-direction:column;gap:8px}
+.q{display:grid;grid-template-columns:1fr auto;gap:3px 8px;padding:12px 13px;min-height:98px;grid-template-rows:auto auto auto;align-content:start;border-radius:14px;width:100%;text-align:left;border:1px solid var(--line);background:var(--surface);box-shadow:0 1px 0 rgba(18,26,23,.04),0 4px 14px rgba(18,26,23,.06)}
 .q:hover{border-color:var(--ink3)}
 .q.on{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-soft),0 4px 14px rgba(18,26,23,.06)}
 .q .id{font-size:12px;color:var(--ink3)}
-.q .veh{font-weight:600;font-size:14px}
-.q .sub{font-size:12px;color:var(--ink2);grid-column:1}
+.q .veh{font-weight:600;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.q .sub{font-size:12px;color:var(--ink2);grid-column:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .q .amt{grid-row:1/4;align-self:center;text-align:right;font-family:"IBM Plex Mono",monospace;font-size:13px}
 .chip{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface3);color:var(--ink2);letter-spacing:.02em;white-space:nowrap}
 .chip .d{width:6px;height:6px;border-radius:50%;background:currentColor}
@@ -332,7 +333,7 @@ const STATUS={new:["New · not decided","new"],running:["Deciding…","amber"],a
 
 function renderQueue(){
   $("#queue").innerHTML=CLAIMS.map(c=>{const st=STATUS[c.status];return `<button class="q ${state.cur===c.id?"on":""}" data-id="${c.id}"><span class="id mono">${c.id} · ${c.submitted}</span><span class="amt">${fmt(c.lines.reduce((a,l)=>a+l.amt,0))}</span><span class="veh">${c.vehicle}</span><span class="sub">${c.component} · ${c.shop}</span><span class="sub"><span class="chip ${st[1]}"><i class="d"></i>${st[0]}</span></span></button>`}).join("")
-   +`<h4 style="margin-top:8px;padding:4px 4px 0">Earlier today</h4>`+OLDER.map(o=>`<div class="q" style="cursor:default"><span class="id mono">${o[0]}</span><span class="amt">${o[3]}</span><span class="veh">${o[1]}</span><span class="sub">${o[2]}</span><span class="sub"><span class="chip ${o[4]}"><i class="d"></i>${o[5]}</span></span></div>`).join("");
+   +`<h4 style="padding:8px 4px 0">Earlier today</h4>`+OLDER.map(o=>`<div class="q" style="cursor:default"><span class="id mono">${o[0]}</span><span class="amt">${o[3]}</span><span class="veh">${o[1]}</span><span class="sub">${o[2]}</span><span class="sub"><span class="chip ${o[4]}"><i class="d"></i>${o[5]}</span></span></div>`).join("");
   $("#queue").querySelectorAll("[data-id]").forEach(b=>b.onclick=()=>open(b.dataset.id));
 }
 function open(id){state.cur=id;const c=byId(id);state.phase=(c.status==="new")?"intake":"decided";state.tab="lines";renderQueue();renderMain()}
