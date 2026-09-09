@@ -85,9 +85,11 @@ button:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--amber);out
 .lines .det{font-size:12px;color:var(--ink2);margin-top:2px}
 .cite{color:var(--accent);font-weight:600;cursor:pointer;text-decoration:underline;text-underline-offset:2px}
 .photos{display:flex;gap:8px;flex-wrap:wrap;margin-top:6px}
-.ph{width:104px;height:78px;border-radius:9px;background:var(--surface3);display:flex;flex-direction:column;justify-content:flex-end;padding:6px 8px;font-size:11px;color:var(--ink2);position:relative;overflow:hidden;border:1px solid var(--line)}
-.ph svg{position:absolute;inset:0;width:100%;height:100%;opacity:.55}
-.ph.missing{border:1px dashed var(--crit);color:var(--crit);background:var(--crit-soft)}
+.ph{width:128px;height:96px;border-radius:10px;background:var(--surface3);position:relative;overflow:hidden;border:1px solid var(--line);color:var(--ink3)}
+.ph span{position:absolute;left:0;right:0;bottom:0;padding:5px 8px;background:var(--surface);color:var(--ink2);font-size:11px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;border-top:1px solid var(--line)}
+.ph svg{position:absolute;left:0;right:0;top:0;bottom:26px;width:100%;height:calc(100% - 26px);opacity:.6}
+.ph.missing{border:1px dashed var(--crit);background:var(--crit-soft)}
+.ph.missing span{color:var(--crit)}
 .ph.blur{filter:none}.ph.blur svg{filter:blur(2px)}
 .codes{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .code{font-family:"IBM Plex Mono",monospace;font-size:12px;padding:3px 7px;border-radius:6px;background:var(--amber-soft);color:var(--amber);font-weight:500}
@@ -181,7 +183,8 @@ textarea{width:100%;font:inherit;padding:10px;border-radius:10px;border:1px soli
 .suff tr.miss td{background:var(--amber-soft)}
 .pgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;margin-top:12px}
 .pcard{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:var(--surface2)}
-.pcard .ph.big{width:100%;height:150px;border-radius:0;border:0}
+.pcard .ph.big{width:100%;height:160px;border-radius:0;border:0}
+.pcard .ph.big span{font-size:12px;padding:7px 12px}
 .pcard.neg{border-color:var(--crit)}.pcard.warn{border-color:var(--amber)}
 .pbody{padding:10px 12px}
 .pacts{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
@@ -244,7 +247,7 @@ const FORMS={
 };
 const ICON_CHECK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4L19 7"/></svg>';
 function ph(label,kind,extra){ // placeholder photo illustration
-  const art={part:'<svg viewBox="0 0 104 78"><rect x="18" y="22" width="68" height="36" rx="6" fill="currentColor"/><circle cx="34" cy="40" r="6" fill="var(--surface)"/><circle cx="52" cy="40" r="6" fill="var(--surface)"/><circle cx="70" cy="40" r="6" fill="var(--surface)"/></svg>',
+  const art={part:'<svg viewBox="0 0 104 78"><rect x="26" y="26" width="52" height="34" rx="5" fill="currentColor"/><rect x="40" y="14" width="24" height="14" rx="3" fill="currentColor"/><circle cx="52" cy="43" r="9" fill="var(--surface)"/><circle cx="52" cy="43" r="4" fill="currentColor"/><rect x="14" y="36" width="12" height="14" rx="2" fill="currentColor"/><rect x="78" y="36" width="12" height="14" rx="2" fill="currentColor"/></svg>',
    odo:'<svg viewBox="0 0 104 78"><rect x="14" y="26" width="76" height="26" rx="4" fill="currentColor"/><text x="52" y="45" text-anchor="middle" font-family="monospace" font-size="14" fill="var(--surface)">068412</text></svg>',
    vin:'<svg viewBox="0 0 104 78"><rect x="10" y="30" width="84" height="18" rx="3" fill="currentColor"/></svg>',
    bay:'<svg viewBox="0 0 104 78"><path d="M10 60l20-30h44l20 30z" fill="currentColor"/></svg>',
